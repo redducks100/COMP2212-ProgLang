@@ -15,4 +15,4 @@ Expr ::=  Expr Op Expr | IntegerLit | StringLit | BooleanLit | "!" Expr | "(" Ex
 BooleanLit ::= true | false
 IntegerLit ::= Digit { Digit }
 StringLit ::= Letter {Letter | Digit | "_" }
-Op ::= + | - | * | / | ^ | < | > | <= | >= 
+Op ::= + | - | * | / | ^ | < | > | <= | >= | ==
