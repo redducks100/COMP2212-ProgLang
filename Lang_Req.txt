@@ -7,4 +7,12 @@ Problem 3:
     +expressions
 Problem 4:
 Problem 5:
-    +
+
+
+BNF Syntax:
+
+Expr ::=  Expr Op Expr | IntegerLit | StringLit | BooleanLit | "!" Expr | "(" Expr ")"
+BooleanLit ::= true | false
+IntegerLit ::= Digit { Digit }
+StringLit ::= Letter {Letter | Digit | "_" }
+Op ::= + | - | * | / | ^ | < | > | <= | >= 
