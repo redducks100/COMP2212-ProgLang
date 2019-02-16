@@ -1,0 +1,10 @@
+Problem 1:
+    +variable assignments
+    +I/O static? functions
+    +loops (while loop)
+Problem 2:
+Problem 3:
+    +expressions
+Problem 4:
+Problem 5:
+    +
