@@ -80,7 +80,7 @@ Expr : Expr op Expr           { ExprOp $1 $2 $3}
 { 
 parseError :: [Token] -> a
 parseError [] = error " Unknown parse error"
-parseError (x:xs) = error ("Parse error at line:column " ++ (token_posn t))
+parseError (x:xs) = error ("Parse error at line:column " ++ (token_posn x))
 
 
 data MethodDecl
