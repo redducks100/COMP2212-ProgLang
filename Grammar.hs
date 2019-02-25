@@ -462,7 +462,7 @@ happyReduction_2 (_ `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn4
-		 (MethodDecl happy_var_2 happy_var_4 happy_var_7
+		 (MethodDeclVoid happy_var_2 happy_var_4 happy_var_7
 	) `HappyStk` happyRest
 
 happyReduce_3 = happySpecReduce_2  5 happyReduction_3
@@ -486,7 +486,7 @@ happyReduction_4 ((HappyAbsSyn5  happy_var_4) `HappyStk`
 happyReduce_5 = happySpecReduce_1  6 happyReduction_5
 happyReduction_5 _
 	 =  HappyAbsSyn6
-		 (TypeBoolean
+		 (TypeBool
 	)
 
 happyReduce_6 = happySpecReduce_1  6 happyReduction_6

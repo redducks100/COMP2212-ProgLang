@@ -43,12 +43,12 @@ import Tokens
 %% 
 
 MethodDecl : Type ident "(" FormalList ")" "{" StatementList "return" Expr ";" "}" { MethodDecl $1 $2 $4 $7 $9}
-           | "void" ident "(" FormalList ")" "{" StatementList "}" { MethodDecl $2 $4 $7}
+           | "void" ident "(" FormalList ")" "{" StatementList "}" { MethodDeclVoid $2 $4 $7}
 
 FormalList : Type ident                { FormalList $1 $2 FEmpty }
            | Type ident "," FormalList { FormalList $1 $2 $4 }
  
-Type : "bool"          { TypeBoolean }
+Type : "bool"          { TypeBool }
      | "int"           { TypeInt }
      | "string"        { TypeString }
 
