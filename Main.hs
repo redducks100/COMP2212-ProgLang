@@ -8,7 +8,7 @@ import System.IO
 main :: IO ()
 main = catch main' noParse
 
-main' = do sourceText <- readFile "test.txt"
+main' = do sourceText <- readFile "lang.txt"
            putStrLn ("Parsing : " ++ sourceText)
            let tokens = alexScanTokens sourceText
            putStrLn ("Tokens: " ++ show tokens)

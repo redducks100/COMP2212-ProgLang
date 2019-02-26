@@ -44,7 +44,7 @@ import Tokens
 %% 
 
 Program : 
-        Statement MethodDeclList { Program $1 $2 }
+        StatementList MethodDeclList { Program $1 $2 }
 
 MethodDeclList :
      MethodDecl                   { MethodDeclList $1 MEmpty }
@@ -66,13 +66,15 @@ MethodDecl : Type ident "(" FormalList ")" "{" StatementList "return" Expr ";" "
 
 FormalList : Type ident                { FormalList $1 $2 FEmpty }
            | Type ident "," FormalList { FormalList $1 $2 $4 }
+           |                           { FEmpty }
  
 
 
 
  
-StatementList : Statement               { StatementList Empty $1 }
+StatementList : Statement                 { StatementList Empty $1 }
               | StatementList Statement   { StatementList $1 $2 }
+              |                           { Empty }
 
 Expr : Expr op Expr           { ExprOp $1 $2 $3}
      | Expr compop Expr       { ExprCompareOp $1 $2 $3 } 
@@ -94,7 +96,7 @@ parseError [] = error " Unknown parse error"
 parseError (x:xs) = error ("Parse error at line:column " ++ (token_posn x))
 
 data Program 
-    = Program Statement MethodDeclList
+    = Program StatementList MethodDeclList
       deriving (Show, Eq)
 
 data MethodDeclList
