@@ -6,6 +6,7 @@ import Tokens
 %name parseCalc 
 %tokentype { Token } 
 %error { parseError }
+
 %token 
   op          { TokenOp _ $$ }
   compop      { TokenCompareOp _ $$ }
@@ -42,18 +43,13 @@ import Tokens
 
 %% 
 
-MethodDecl : Type ident "(" FormalList ")" "{" StatementList "return" Expr ";" "}" { MethodDecl $1 $2 $4 $7 $9}
-           | "void" ident "(" FormalList ")" "{" StatementList "}" { MethodDeclVoid $2 $4 $7}
+Program : 
+        Statement MethodDeclList { Program $1 $2 }
 
-FormalList : Type ident                { FormalList $1 $2 FEmpty }
-           | Type ident "," FormalList { FormalList $1 $2 $4 }
- 
-Type : "bool"          { TypeBool }
-     | "int"           { TypeInt }
-     | "string"        { TypeString }
-
-VarDeclr : Type ident ";"           {VarDeclrOnly $1 $2}
-         | Type ident "=" Expr ";"  {VarDeclrAssign $1 $2 $4}
+MethodDeclList :
+     MethodDecl                   { MethodDeclList $1 MEmpty }
+     | MethodDecl MethodDeclList  { MethodDeclList $1 $2 }
+     |                            { MEmpty }
 
 Statement : "{" StatementList "}"                        { StatementLList $2 }
           | "if" "(" Expr ")" Statement "else" Statement  { StatementIfElse $3 $5 $7 }
@@ -61,6 +57,19 @@ Statement : "{" StatementList "}"                        { StatementLList $2 }
           | "print" "(" Expr ")" ";"                      { StatementPrint $3 }
           | ident "=" Expr ";"                            { StatementAssign $1 $3 }
           | VarDeclr                                     { StatementVarDeclr $1}
+
+VarDeclr : Type ident ";"           {VarDeclrOnly $1 $2}
+         | Type ident "=" Expr ";"  {VarDeclrAssign $1 $2 $4}
+
+MethodDecl : Type ident "(" FormalList ")" "{" StatementList "return" Expr ";" "}" { MethodDecl $1 $2 $4 $7 $9}
+           | "void" ident "(" FormalList ")" "{" StatementList "}" { MethodDeclVoid $2 $4 $7}
+
+FormalList : Type ident                { FormalList $1 $2 FEmpty }
+           | Type ident "," FormalList { FormalList $1 $2 $4 }
+ 
+
+
+
  
 StatementList : Statement               { StatementList Empty $1 }
               | StatementList Statement   { StatementList $1 $2 }
@@ -74,7 +83,9 @@ Expr : Expr op Expr           { ExprOp $1 $2 $3}
      | "false"                { ExprBool False}
      | "(" Expr ")"           { ExprExpr $2}  
 
-
+Type : "bool"          { TypeBool }
+     | "int"           { TypeInt }
+     | "string"        { TypeString }
 
 
 { 
@@ -82,7 +93,16 @@ parseError :: [Token] -> a
 parseError [] = error " Unknown parse error"
 parseError (x:xs) = error ("Parse error at line:column " ++ (token_posn x))
 
+data Program 
+    = Program Statement MethodDeclList
+      deriving (Show, Eq)
 
+data MethodDeclList
+    = MethodDeclList MethodDecl MethodDeclList
+    | MEmpty
+    deriving (Show, Eq)
+
+    
 data MethodDecl
     = MethodDecl Type Ident FormalList StatementList Expr
     | MethodDeclVoid Ident FormalList StatementList
@@ -93,6 +113,11 @@ data FormalList
     = FormalList Type Ident FormalList
     | FEmpty
   deriving (Show, Eq)
+
+data VarDeclr
+    = VarDeclrOnly Type Ident
+    | VarDeclrAssign Type Ident Expr
+    deriving (Show, Eq)
 
 data Statement
     = Statement String
@@ -111,10 +136,6 @@ data StatementList
     | Empty
     deriving (Show, Eq)
 
-data VarDeclr
-    = VarDeclrOnly Type Ident
-    | VarDeclrAssign Type Ident Expr
-    deriving (Show, Eq)
 
 data Expr 
     = Expr String 
@@ -127,6 +148,14 @@ data Expr
     | ExprNot Expr 
     | ExprError
     deriving (Show, Eq)
+
+
+      
+data Type 
+    =   TypeInt
+    |   TypeBool
+    |   TypeString 
+    deriving (Show,Eq) 
 
 data Op
     =  Minus 
@@ -148,13 +177,6 @@ data CompareOp
 
 type Ident = String
 type IntegerLit = Int
-      
-data Type 
-    =   TypeInt
-    |   TypeBool
-    |   TypeString 
-    deriving (Show,Eq) 
-    
 
 
 } 

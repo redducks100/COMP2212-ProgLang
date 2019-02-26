@@ -25,9 +25,6 @@ tokens :-
   "or"        { tok (\p s -> TokenCompareOp p s)}
   "=="        { tok (\p s -> TokenCompareOp p s)}
   "not"       { tok (\p s -> TokenNegate p)}
-  $alpha [$alpha $digit \_ \’]*   { tok(\p s -> TokenIdent p s) }
-  @string     {tok(\p s -> TokenStringLit p (init (tail s))) } 
-  $digit+     {tok(\p s -> TokenIntLit p (read s)) } 
   "int"       {tok(\p s -> TokenInt p)}
   "string"    {tok(\p s -> TokenString p)}
   "bool"      {tok(\p s -> TokenBool p)}
@@ -46,6 +43,9 @@ tokens :-
   "while"     {tok(\p s -> TokenWhile p)}
   "void"      {tok(\p s -> TokenVoid p)} 
   "print"     { tok(\p s -> TokenPrint p) }
+  $alpha [$alpha $digit \_ \’]*   { tok(\p s -> TokenIdent p s) }
+  @string     {tok(\p s -> TokenStringLit p (init (tail s))) } 
+  $digit+     {tok(\p s -> TokenIntLit p (read s)) } 
 
 { 
 

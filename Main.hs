@@ -8,11 +8,13 @@ import System.IO
 main :: IO ()
 main = catch main' noParse
 
-main' = do (fileName : _ ) <- getArgs 
-           sourceText <- readFile fileName
+main' = do sourceText <- readFile "test.txt"
            putStrLn ("Parsing : " ++ sourceText)
+           let tokens = alexScanTokens sourceText
+           putStrLn ("Tokens: " ++ show tokens)
            let parsedProg = parseCalc (alexScanTokens sourceText)
            putStrLn ("Parsed as " ++ (show parsedProg))
+        
 
 noParse :: ErrorCall -> IO ()
 noParse e = do let err =  show e
