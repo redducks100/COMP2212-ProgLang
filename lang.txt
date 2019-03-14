@@ -1,4 +1,0 @@
-int[] x = {y+2,3+2};
-
-bool ww = true;
-
