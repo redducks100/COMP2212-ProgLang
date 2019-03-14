@@ -12,7 +12,6 @@ $graphic = $printable # $white
 @string =  \" ($graphic # \")* \"
 
 
-
 tokens :-
   $white+     ; 
   "//".*      ;
@@ -33,15 +32,15 @@ tokens :-
   \)          {tok(\p s -> TokenRightParen p)}
   \{          {tok(\p s -> TokenLeftBrace p)}
   \}          {tok(\p s -> TokenRightBrace p)}
+  \[          {tok(\p s -> TokenLeftBracket p)}
+  \]          {tok(\p s -> TokenRightBracket p)}
   \;          {tok(\p s -> TokenSemiColon p)}
   \,          {tok(\p s -> TokenColon p)}
-  "return"    {tok(\p s -> TokenReturn p)}
   "if"        {tok(\p s -> TokenIf p)}
   "else"      {tok(\p s -> TokenElse p)}
   "true"      {tok(\p s -> TokenTrue p)}
   "false"     {tok(\p s -> TokenFalse p)}
   "while"     {tok(\p s -> TokenWhile p)}
-  "void"      {tok(\p s -> TokenVoid p)} 
   "print"     { tok(\p s -> TokenPrint p) }
   $alpha [$alpha $digit \_ \’]*   { tok(\p s -> TokenIdent p s) }
   @string     {tok(\p s -> TokenStringLit p (init (tail s))) } 
@@ -68,15 +67,15 @@ data Token =
   TokenRightParen AlexPosn  |
   TokenLeftBrace  AlexPosn  |
   TokenRightBrace AlexPosn  |
+  TokenLeftBracket  AlexPosn  |
+  TokenRightBracket AlexPosn  |
   TokenSemiColon  AlexPosn  |
   TokenColon      AlexPosn  |
-  TokenReturn     AlexPosn  |
   TokenIf         AlexPosn  | 
   TokenElse       AlexPosn  |
   TokenTrue       AlexPosn  |
   TokenFalse      AlexPosn  |
   TokenWhile      AlexPosn  |
-  TokenVoid       AlexPosn  |
   TokenPrint      AlexPosn
   deriving (Eq,Show) 
 
@@ -95,14 +94,14 @@ token_posn (TokenLeftParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 token_posn (TokenRightParen (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 token_posn (TokenLeftBrace (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 token_posn (TokenRightBrace (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+token_posn (TokenLeftBracket (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
+token_posn (TokenRightBracket (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 token_posn (TokenSemiColon (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
 token_posn (TokenColon (AlexPn a l c)) = show(l) ++ ":" ++ show(c)
-token_posn (TokenReturn (AlexPn a l c)) = show(l) ++ ":" ++ show(c) 
 token_posn (TokenIf (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenElse (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenTrue (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenFalse (AlexPn a l c))=show(l) ++ ":" ++ show(c)
-token_posn (TokenVoid (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenWhile (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenPrint (AlexPn a l c))=show(l) ++ ":" ++ show(c)
   
