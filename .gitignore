@@ -1,3 +1,4 @@
 *.hs
 
 !Main.hs
+!Eval.hs
