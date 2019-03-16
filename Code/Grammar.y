@@ -155,6 +155,7 @@ data Expr
     | ExprExpr Expr
     | ExprArrayAssign ExprList 
     | ExprArrayValue Ident Int
+    | ExprEmpty
     | ExprError
     deriving (Show, Eq)
 
