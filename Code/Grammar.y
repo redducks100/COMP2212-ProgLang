@@ -8,10 +8,21 @@ import Tokens
 %error { parseError }
 
 %token 
-  op          { TokenOp _ $$ }
-  compop      { TokenCompareOp _ $$ }
+  "+"         { TokenOp _ '+' }
+  "-"         { TokenOp _ '-' }          
+  "*"         { TokenOp _ '*' }
+  "/"         { TokenOp _ '/' }
+  "^"         { TokenOp _ '^' }
+  "<"         { TokenCompareOp _ "<" }
+  ">"         { TokenCompareOp _ ">" }
+  "<="        { TokenCompareOp _ "<=" }
+  ">="        { TokenCompareOp _ ">=" }
+  "=="        { TokenCompareOp _ "==" }
+  "and"       { TokenCompareOp _ "and" }
+  "or"        { TokenCompareOp _ "or" }
   ident       { TokenIdent _ $$ }
   intLit      { TokenIntLit _ $$ } 
+  stringLit   { TokenStringLit _ $$}
   "int"       { TokenInt _ }
   "string"    { TokenString _ }
   "bool"      { TokenBool _ }
@@ -33,15 +44,17 @@ import Tokens
   "print"     { TokenPrint _}
 
 
-%nonassoc 'if' 'while' 
-%nonassoc 'else'
-%nonassoc 'int' 'string' 'bool' 'true' 'false' '{' '}' '(' ')' '[' ']' ';'
-%left 'and' 'or'
-%nonassoc '>' '<' '>=' '<=' '=='
-%left '+' '-'  
-%left '*' '/'
-%left '^' 
-%left 'not' 
+%nonassoc "if" "while"
+%nonassoc "else"
+%nonassoc "print" "int" "bool" "string"
+%nonassoc ">" "<" ">=" "<=" "=="
+%right "="
+%left "and" "or"
+%left "+" "-" 
+%left "*" "/"
+%left "^"  
+%left "not"
+
  
 
 %% 
@@ -49,36 +62,48 @@ import Tokens
 Program : 
         StatementList { Program $1 }
 
-Statement : "{" StatementList "}"                        { StatementLList $2 }
-          | "if" "(" Expr ")" Statement "else" Statement  { StatementIfElse $3 $5 $7 }
-          | "while" "(" Expr ")" Statement                { StatementWhile $3 $5 }
+Statement : "if" "(" Expr ")" "{" StatementList "}" "else" "{" StatementList "}"  { StatementIfElse $3 $6 $10 }
+          | "while" "(" Expr ")" "{" StatementList "}"                { StatementWhile $3 $6 }
           | "print" "(" Expr ")" ";"                      { StatementPrint $3 }
           | ident "=" Expr ";"                            { StatementAssign $1 $3 }
+          | ident "[" intLit "]" "=" Expr ";"             { StatementArrayAssign $1 $3 $6}
           | VarDeclr                                     { StatementVarDeclr $1}
           | ArrayDeclr                                   { StatementArrayDeclr $1}
 
 VarDeclr : Type ident ";"           {VarDeclrOnly $1 $2}
          | Type ident "=" Expr ";"  {VarDeclrAssign $1 $2 $4}
 
-ExprList : Expr {ExprList $1 EEmpty}
-         | Expr "," ExprList {ExprList $1 $3}
+ExprList : ExprList "," Expr { ($1 ++ [$3])}
+         | Expr              { [$1] }
+         | {- empty -}       { [] }
 
 ArrayDeclr : Type "[" "]" ident ";" {ArrayDeclrOnly $1 $4}
            | Type "[" "]" ident "=" Expr ";" {ArrayDeclrAssign $1 $4 $6}
 
-StatementList : Statement                 { StatementList Empty $1 }
-              | StatementList Statement   { StatementList $1 $2 }
-              |                           { Empty }
+StatementList : Statement StatementList  {  ($2 ++ [$1]) }
+              | {- empty -}               {  [] }
 
-Expr : Expr op Expr           { ExprOp $1 $2 $3}
-     | Expr compop Expr       { ExprCompareOp $1 $2 $3 } 
-     | "not" Expr             { ExprNot $2 } 
+Expr : "not" Expr             { ExprNot $2 }
+     | Expr "^" Expr          { ExprOp $1 Power $3} 
+     | Expr "/" Expr          { ExprOp $1 Divide $3}
+     | Expr "*" Expr          { ExprOp $1 Multiply $3}
+     | Expr "+" Expr          { ExprOp $1 Plus $3}
+     | Expr "-" Expr          { ExprOp $1 Minus $3}
+     | Expr "<=" Expr         { ExprCompareOp $1 LessOrEqualThan $3 } 
+     | Expr "<" Expr          { ExprCompareOp $1 LessThan $3 } 
+     | Expr ">" Expr          { ExprCompareOp $1 GreaterThan $3 } 
+     | Expr ">=" Expr         { ExprCompareOp $1 GreaterOrEqualThan $3 } 
+     | Expr "==" Expr         { ExprCompareOp $1 Equals $3 } 
+     | Expr "and" Expr        { ExprCompareOp $1 And $3 } 
+     | Expr "or" Expr         { ExprCompareOp $1 Or $3 }
+     | "(" Expr ")"           { ExprExpr $2} 
+     | "{" ExprList "}"       { ExprArrayAssign $2 } 
+     | ident "[" intLit "]"   { ExprArrayValue $1 $3} 
      | intLit                 { ExprInt $1 } 
      | ident                  { ExprIdent $1 } 
      | "true"                 { ExprBool True}
      | "false"                { ExprBool False}
-     | "(" Expr ")"           { ExprExpr $2} 
-     | "{" ExprList "}"           { ExprArrayAssign $2 }
+     | stringLit              { ExprString $1}
 
 Type : "bool"          { TypeBool }
      | "int"           { TypeInt }
@@ -105,36 +130,31 @@ data ArrayDeclr
 
 data Statement
     = Statement String
-    | StatementLList StatementList
-    | StatementIfElse Expr Statement Statement
-    | StatementWhile Expr Statement
+    | StatementIfElse Expr StatementList StatementList
+    | StatementWhile Expr StatementList
     | StatementPrint Expr
     | StatementAssign Ident Expr
+    | StatementArrayAssign Ident Int Expr
     | StatementVarDeclr VarDeclr
     | StatementArrayDeclr ArrayDeclr
     | StatementError
     deriving (Show, Eq)
 
-data StatementList
-    = StatementList StatementList Statement
-    | Empty
-    deriving (Show, Eq)
+type StatementList = [Statement]
 
-data ExprList
-    = ExprList Expr ExprList
-    | EEmpty
-    deriving (Show, Eq)
+type ExprList = [Expr]
 
 data Expr 
-    = Expr String 
-    | ExprOp Expr Char Expr 
-    | ExprCompareOp Expr String Expr 
+    = ExprString String 
+    | ExprNot Expr 
+    | ExprOp Expr Op Expr 
+    | ExprCompareOp Expr CompareOp Expr 
     | ExprInt Int 
     | ExprBool Bool 
     | ExprIdent Ident 
     | ExprExpr Expr
     | ExprArrayAssign ExprList 
-    | ExprNot Expr 
+    | ExprArrayValue Ident Int
     | ExprError
     deriving (Show, Eq)
 
@@ -147,14 +167,14 @@ data Type
 data Op
     =  Minus 
     |  Plus 
-    |  Times 
+    |  Multiply 
     |  Divide
     |  Power 
     deriving (Show, Eq)
 
 data CompareOp
-    =  LessThan 
-    |  GreaterThan 
+    =  GreaterThan 
+    |  LessThan 
     |  LessOrEqualThan 
     |  GreaterOrEqualThan 
     |  Equals
