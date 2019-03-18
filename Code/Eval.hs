@@ -20,13 +20,13 @@ module Eval where
   
   -- data Statement
   -- = Statement String
-  -- | StatementIfElse Expr StatementList StatementList----------
+  -- | StatementIfElse Expr StatementList StatementList---------
   -- | StatementWhile Expr StatementList---------------------
   -- | StatementPrint Expr-----------------------------------
   -- | StatementAssign Ident Expr
-  -- | StatementArrayAssign Ident Int Expr------------
+  -- | StatementArrayAssign Ident Int Expr
   -- | StatementVarDeclr VarDeclr
-  -- | StatementArrayDeclr ArrayDeclr--------------------------
+  -- | StatementArrayDeclr ArrayDeclr
   -- | StatementError
   -- deriving (Show, Eq)
   
@@ -41,7 +41,8 @@ module Eval where
   -- | ArrayDeclrAssign Type Ident Expr
   --deriving (Show,Eq)
   
-  type Environment = [(String, [Expr])]
+
+  type Environment = [(String, Expr)]
   
   prettyPrint :: Expr -> String
   prettyPrint (ExprInt x) = show x
@@ -50,25 +51,53 @@ module Eval where
   prettyPrint e = show e 
   
   addBinding :: Environment -> String -> Expr -> Environment
-  addBinding env x (ExprArrayAssign e) = (x, e) : env
-  addBinding env x e = (x,[e]) : env
+  addBinding env x e = (x,e) : env
   
-  getValueBinding :: String -> Environment -> [Expr]
-  getValueBinding x [] = error "Variable binding not found!"
+  getValueBinding :: String -> Environment -> Expr
+  getValueBinding x [] = error ("Variable binding '" ++ x ++ "' not found!")
   getValueBinding x ((y,e):env) | x == y && isEmpty e == False = e
-                                | x == y && isEmpty e = error "Variable is not initialised with a value!"
+                                | x == y && isEmpty e = error ("Variable '" ++ x ++ "' is not initialised with a value!")
                                 | otherwise = getValueBinding x env
-                                
-  -- lst = val (replace all values from env under lst with val)
-  -- lst = exprlist ( = {ex,ex,ex})
+  
+  getListValueBinding :: String -> Expr -> Environment -> Expr
+  getListValueBinding x _ [] = error ("Variable binding '" ++ x ++ "' not found!")
+  getListValueBinding x (ExprInt index) ((y,e):env) | x == y && isArray e = (getExprList e) !! index
+                                                    | x == y && (isArray e) == False = error ("Variable '" ++ x ++ "' is not a list")
+                                                    | otherwise = getListValueBinding x (ExprInt index) env
+                                                    
+
   updateValueBinding :: String -> Expr -> Environment -> Environment
-  updateValueBinding x ne [] = error "Value binding not found!"
-  updateValueBinding x ne ((y,[e]):env) | x == y =  (x,[ne]) : env
-                                      | otherwise = (y,[e]) : (updateValueBinding x ne env)                              
-    
-  isEmpty :: [Expr] -> Bool
-  isEmpty [] = True
-  isEmpty [ExprEmpty] = True
+  updateValueBinding x ne [] = error ("Value binding '" ++ x ++ "' not found!")
+  updateValueBinding x ne ((y,e):env) | x == y && isArray ne && isArray e = (x,ne) : env
+                                      | x == y && (isArray ne) == False && (isArray e) == False = (x,ne) : env
+                                      | x /= y = (y,e) : (updateValueBinding x ne env)
+                                      | (isArray ne) == False && isArray e = error ("'" ++ x ++ "': You cannot assign a single expression to a list!")                             
+                                      | isArray ne && (isArray e) == False = error ("'" ++ x ++ "': You cannot assign an expression list to a variable!")
+
+  replaceNth :: Int -> a -> [a] -> [a]
+  replaceNth _ _ [] = error ("Index out of range!")
+  replaceNth n newVal (x:xs) | n == 0 = newVal:xs
+                             | otherwise = x:replaceNth (n-1) newVal xs
+
+  getExprList :: Expr -> [Expr]
+  getExprList (ExprArrayAssign x) = x
+  getExprList _ = []
+
+  updateListValueBinding :: String -> Expr -> Expr -> Environment -> Environment
+  updateListValueBinding x ne index [] = error ("Value binding '" ++ x ++ "' not found!")
+  updateListValueBinding x ne (ExprInt index) ((y,e): env) | x == y && (isArray ne) == False && isArray e = (x, ExprArrayAssign (replaceNth index ne (getExprList e))) : env
+                                                           | x == y && (isArray ne) == False && (isArray e) == False = error ("'" ++ x ++ "': Variable is not a list!") 
+                                                           | x == y && isArray ne && isArray e = error ("'" ++ x ++ "': You cannot assign a list to a variable!") 
+                                                           | x /= y = (y,e) : (updateListValueBinding x ne (ExprInt index) env)
+  updateListValueBinding x ne _ _ = error ("Index is not type of integer!")                                                    
+
+  isArray :: Expr -> Bool
+  isArray (ExprArrayAssign _) = True
+  isArray _ = False
+  
+  isEmpty :: Expr -> Bool
+  isEmpty (ExprArrayAssign []) = True
+  isEmpty ExprEmpty = True
   isEmpty _ = False
 
   isValueFree :: String -> Environment -> Bool
@@ -94,7 +123,8 @@ module Eval where
   evaluateExprOp (ExprInt x1) Divide (ExprInt x2) = ExprInt (x1 `div` x2)
   evaluateExprOp (ExprInt x1) Power (ExprInt x2) = ExprInt (x1 ^ x2)
   evaluateExprOp (ExprString x1) Plus (ExprString x2) = ExprString (x1 ++ x2)
-  evaluateExprOp _ _ _ = error "EvaluateExprOp: Invalid type (Expected type INT or STRING { only concatenation works: '+'})"
+  evaluateExprOp (ExprArrayAssign x1) Plus (ExprArrayAssign x2) = ExprArrayAssign (x1 ++ x2)
+  evaluateExprOp _ _ _ = error "EvaluateExprOp: Invalid type (Expected type INT or STRING/LIST { only concatenation works: '+'})"
 
   evaluateExprComp :: Expr -> CompareOp -> Expr -> Expr
   evaluateExprComp (ExprInt x1) GreaterThan (ExprInt x2) = ExprBool (x1 > x2)
@@ -116,8 +146,14 @@ module Eval where
 
   evaluateExprComp _ _ _ = error "EvaluateExprComp: Cannot compare different types"
 
+  evaluateExprList :: [Expr] -> Environment -> [Expr]
+  evaluateExprList [] _ = []
+  evaluateExprList (e:es) env = (evaluateExpr e env) : evaluateExprList es env
+
   evaluateExpr :: Expr -> Environment -> Expr
   --evaluate expressions with operations (+,-,/,*,^)
+  evaluateExpr (ExprArrayAssign e) env = ExprArrayAssign (evaluateExprList e env)  
+
   evaluateExpr (ExprOp (ExprIdent x1) p (ExprIdent x2)) env = evaluateExpr (ExprOp (getValueBinding x1 env) p (getValueBinding x2 env)) env
   evaluateExpr (ExprOp (ExprIdent x1) p x2) env = evaluateExpr (ExprOp (getValueBinding x1 env) p x2) env
   evaluateExpr (ExprOp x1 p (ExprIdent x2)) env = evaluateExpr (ExprOp x1 p (getValueBinding x2 env)) env
@@ -142,7 +178,7 @@ module Eval where
   --evaluate expressions surrounded by paranthesises
   evaluateExpr (ExprExpr (ExprIdent x1)) env = evaluateExpr (getValueBinding x1 env) env
   evaluateExpr (ExprExpr x1) env = evaluateExpr x1 env                              
-
+  evaluateExpr (ExprArrayValue i e) env = getListValueBinding i (evaluateExpr e env) env
   evaluateExpr x env | isValue x = x
 
 
@@ -153,6 +189,13 @@ module Eval where
 
   -- helperPrint :: 
 
+  evaluateProgram :: Program -> Environment
+  evaluateProgram (Program ss) = evaluateStatementList ss []
+
+  evaluateStatementList :: [Statement] -> Environment -> Environment
+  evaluateStatementList [] env = env
+  evaluateStatementList (s:ss) env = evaluateStatementList ss (evaluateStatement s env)
+
   evaluateStatement :: Statement -> Environment -> Environment
   evaluateStatement (StatementVarDeclr (VarDeclrOnly t i)) env | isValueFree i env = addBinding env i ExprEmpty
                                                                | otherwise = error "Variable name is in use."
@@ -160,5 +203,13 @@ module Eval where
   evaluateStatement (StatementVarDeclr (VarDeclrAssign t i e)) env | isValueFree i env = addBinding env i (evaluateExpr e env)
                                                                    | otherwise = error "Variable name is in use."
   
+  evaluateStatement (StatementArrayDeclr (ArrayDeclrOnly t i)) env | isValueFree i env = addBinding env i (ExprArrayAssign [])
+                                                                   | otherwise = error "Variable name is in use."
+  
+  evaluateStatement (StatementArrayDeclr (ArrayDeclrAssign t i e)) env | isValueFree i env = addBinding env i (evaluateExpr e env)
+                                                                                         | otherwise = error "Variable name is in use."
+
+  evaluateStatement (StatementArrayAssign i index e) env = updateListValueBinding i (evaluateExpr e env) (evaluateExpr index env) env
+
   evaluateStatement (StatementAssign i e) env = updateValueBinding i (evaluateExpr e env) env
   

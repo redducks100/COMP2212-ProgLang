@@ -66,7 +66,7 @@ Statement : "if" "(" Expr ")" "{" StatementList "}" "else" "{" StatementList "}"
           | "while" "(" Expr ")" "{" StatementList "}"                { StatementWhile $3 $6 }
           | "print" "(" Expr ")" ";"                      { StatementPrint $3 }
           | ident "=" Expr ";"                            { StatementAssign $1 $3 }
-          | ident "[" intLit "]" "=" Expr ";"             { StatementArrayAssign $1 $3 $6}
+          | ident "[" Expr "]" "=" Expr ";"             { StatementArrayAssign $1 $3 $6}
           | VarDeclr                                     { StatementVarDeclr $1}
           | ArrayDeclr                                   { StatementArrayDeclr $1}
 
@@ -80,7 +80,7 @@ ExprList : ExprList "," Expr { ($1 ++ [$3])}
 ArrayDeclr : Type "[" "]" ident ";" {ArrayDeclrOnly $1 $4}
            | Type "[" "]" ident "=" Expr ";" {ArrayDeclrAssign $1 $4 $6}
 
-StatementList : Statement StatementList  {  ($2 ++ [$1]) }
+StatementList : Statement StatementList  {  ([$1] ++ $2) }
               | {- empty -}               {  [] }
 
 Expr : "not" Expr             { ExprNot $2 }
@@ -98,7 +98,7 @@ Expr : "not" Expr             { ExprNot $2 }
      | Expr "or" Expr         { ExprCompareOp $1 Or $3 }
      | "(" Expr ")"           { ExprExpr $2} 
      | "{" ExprList "}"       { ExprArrayAssign $2 } 
-     | ident "[" intLit "]"   { ExprArrayValue $1 $3} 
+     | ident "[" Expr "]"   { ExprArrayValue $1 $3} 
      | intLit                 { ExprInt $1 } 
      | ident                  { ExprIdent $1 } 
      | "true"                 { ExprBool True}
@@ -134,7 +134,7 @@ data Statement
     | StatementWhile Expr StatementList
     | StatementPrint Expr
     | StatementAssign Ident Expr
-    | StatementArrayAssign Ident Int Expr
+    | StatementArrayAssign Ident Expr Expr
     | StatementVarDeclr VarDeclr
     | StatementArrayDeclr ArrayDeclr
     | StatementError
@@ -154,7 +154,7 @@ data Expr
     | ExprIdent Ident 
     | ExprExpr Expr
     | ExprArrayAssign ExprList 
-    | ExprArrayValue Ident Int
+    | ExprArrayValue Ident Expr
     | ExprEmpty
     | ExprError
     deriving (Show, Eq)
