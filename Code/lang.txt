@@ -1,4 +1,19 @@
-int x;
-x=3;
-int[] list = {1,x+2} + {3};
-int y = list[1];
+int x=0;
+int y=10;
+if(x>=0)
+{
+while(x<y)
+{
+int z=5;
+int w=x;
+while(z<w)
+{
+z=z+1;
+}
+x=x+1;
+}
+}
+else
+{
+
+}

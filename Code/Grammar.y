@@ -157,6 +157,7 @@ data Expr
     | ExprArrayValue Ident Expr
     | ExprEmpty
     | ExprError
+    | ExprNothing
     deriving (Show, Eq)
 
 data Type 
