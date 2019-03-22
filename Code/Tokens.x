@@ -41,7 +41,8 @@ tokens :-
   "true"      {tok(\p s -> TokenTrue p)}
   "false"     {tok(\p s -> TokenFalse p)}
   "while"     {tok(\p s -> TokenWhile p)}
-  "print"     { tok(\p s -> TokenPrint p) }
+  "print"     {tok(\p s -> TokenPrint p)}
+  "read"      {tok(\p s -> TokenRead p)}
   $alpha [$alpha $digit \_ \’]*   { tok(\p s -> TokenIdent p s) }
   @string     {tok(\p s -> TokenStringLit p (init (tail s))) } 
   $digit+     {tok(\p s -> TokenIntLit p (read s)) } 
@@ -76,7 +77,8 @@ data Token =
   TokenTrue       AlexPosn  |
   TokenFalse      AlexPosn  |
   TokenWhile      AlexPosn  |
-  TokenPrint      AlexPosn
+  TokenPrint      AlexPosn  |
+  TokenRead       AlexPosn  
   deriving (Eq,Show) 
 
 
@@ -104,5 +106,6 @@ token_posn (TokenTrue (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenFalse (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenWhile (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenPrint (AlexPn a l c))=show(l) ++ ":" ++ show(c)
+token_posn (TokenRead (AlexPn a l c))=show(l) ++ ":" ++ show(c)
   
 }

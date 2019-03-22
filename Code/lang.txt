@@ -1,19 +1,4 @@
-int x=0;
-int y=10;
-if(x>=0)
-{
-while(x<y)
-{
-int z=5;
-int w=x;
-while(z<w)
-{
-z=z+1;
-}
-x=x+1;
-}
-}
-else
-{
-
-}
+int x=10;
+print(x);
+print("\n");
+print(20);

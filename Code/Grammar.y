@@ -42,6 +42,7 @@ import Tokens
   "false"     { TokenFalse _ }
   "while"     { TokenWhile _ }
   "print"     { TokenPrint _}
+  "read"      { TokenRead _}
 
 
 %nonassoc "if" "while"
@@ -104,6 +105,7 @@ Expr : "not" Expr             { ExprNot $2 }
      | "true"                 { ExprBool True}
      | "false"                { ExprBool False}
      | stringLit              { ExprString $1}
+     | "read" "(" ")"         { ExprRead }
 
 Type : "bool"          { TypeBool }
      | "int"           { TypeInt }
@@ -155,6 +157,7 @@ data Expr
     | ExprExpr Expr
     | ExprArrayAssign ExprList 
     | ExprArrayValue Ident Expr
+    | ExprRead
     | ExprEmpty
     | ExprError
     | ExprNothing

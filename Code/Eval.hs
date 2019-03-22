@@ -3,6 +3,7 @@ module Eval where
   import System.Environment
   import Control.Exception
   import System.IO
+  import Data.List
   
   --data Expr 
   --    = ExprString String 
@@ -35,7 +36,7 @@ module Eval where
   prettyPrint :: Expr -> String
   prettyPrint (ExprInt x) = show x
   prettyPrint (ExprBool x) = show x
-  prettyPrint (ExprString x) = x
+  prettyPrint (ExprString x) = read $ "\"" ++ x ++ "\""
   prettyPrint e = show e 
 
 
@@ -164,12 +165,11 @@ module Eval where
   evaluateExprComp (ExprBool x1) And (ExprBool x2) = ExprBool (x1 && x2)
   evaluateExprComp (ExprBool x1) Or (ExprBool x2) = ExprBool (x1 || x2)
 
-
   evaluateExprComp (ExprString x1) GreaterThan (ExprString x2) = ExprBool (length x1 > length x2)
   evaluateExprComp (ExprString x1) LessThan (ExprString x2) = ExprBool (length x1 < length x2)
   evaluateExprComp (ExprString x1) GreaterOrEqualThan (ExprString x2) = ExprBool (length x1 >= length x2)
   evaluateExprComp (ExprString x1) LessOrEqualThan (ExprString x2) = ExprBool (length x1 <= length x2)
-  evaluateExprComp (ExprString x1) Equals (ExprString x2) = ExprBool (length x1 == length x2)
+  evaluateExprComp (ExprString x1) Equals (ExprString x2) = ExprBool (x1 == x2)
 
   evaluateExprComp _ _ _ = error "EvaluateExprComp: Cannot compare different types"
 
@@ -216,47 +216,54 @@ module Eval where
   checkIfBoolAndTrue (ExprBool False) = False
   checkIfBoolAndTrue _ = error ("Couldn't match the given expression with the bool type!");
 
-  -- evaluateStatementPrint :: Statement -> Environment -> IO (Environment)
-  -- evaluateStatementPrint (StatementPrint e) env = do let evalE = evaluateExpr e env
-  --                                                    putStrLn (prettyPrint evalE)
-  --                                                    return ( env) 
-
-  -- helperPrint :: 
-
-  evaluateProgram :: Program -> [Environment]
-  evaluateProgram (Program ss) = evaluateStatementList ss [[]]
-
-  evaluateStatementList :: [Statement] -> [Environment] -> [Environment]
-  evaluateStatementList [] env = env
-  evaluateStatementList (s:ss) env = evaluateStatementList ss (evaluateStatement s env)
-
-  evaluateStatement :: Statement -> [Environment] -> [Environment]
-  evaluateStatement (StatementVarDeclr (VarDeclrOnly t i)) env | isValueFree i env = addBinding env i ExprEmpty
-                                                               | otherwise = error "Variable name is in use."
-
-  evaluateStatement (StatementVarDeclr (VarDeclrAssign t i e)) env | isValueFree i env = addBinding env i (evaluateExpr e env)
-                                                                   | otherwise = error "Variable name is in use."
+  evaluateStatementPrint :: Statement -> [String] -> [Environment] -> IO([Environment])
+  evaluateStatementPrint (StatementPrint e) input env = do putStrLn (prettyPrint (evaluateExpr e env))
+                                                           return env
   
-  evaluateStatement (StatementArrayDeclr (ArrayDeclrOnly t i)) env | isValueFree i env = addBinding env i (ExprArrayAssign [])
-                                                                   | otherwise = error "Variable name is in use."
+  evaluateProgram :: Program -> [[Int]] -> IO([Environment])
+  evaluateProgram (Program ss) input = evaluateStatementList ss input [[]]
+
+  evaluateStatementList :: [Statement] -> [[Int]] -> [Environment] -> IO([Environment])
+  evaluateStatementList [] input env = do return (env)
+  evaluateStatementList (s:ss) input env = do newEnv <- evaluateStatement s input env
+                                              nextLine <- evaluateStatementList ss input newEnv
+                                              return (nextLine)
+
+  evaluateStatement :: Statement -> [[Int]] -> [Environment] -> IO([Environment])
+  evaluateStatement (StatementVarDeclr (VarDeclrOnly t i)) input env = do if isValueFree i env 
+                                                                          then return (addBinding env i ExprEmpty)
+                                                                          else error "Variable name is in use."
+
+  evaluateStatement (StatementVarDeclr (VarDeclrAssign t i e)) input env = do if isValueFree i env
+                                                                              then return (addBinding env i (evaluateExpr e env))
+                                                                              else error "Variable name is in use."
   
-  evaluateStatement (StatementArrayDeclr (ArrayDeclrAssign t i e)) env | isValueFree i env = addBinding env i (evaluateExpr e env)
-                                                                       | otherwise = error "Variable name is in use."
-
-  evaluateStatement (StatementArrayAssign i index e) env = updateListValueBinding i (evaluateExpr e env) (evaluateExpr index env) env
-
-  evaluateStatement (StatementAssign i e) env = updateValueBinding i (evaluateExpr e env) env
+  evaluateStatement (StatementArrayDeclr (ArrayDeclrOnly t i)) input env = do if isValueFree i env
+                                                                              then return (addBinding env i (ExprArrayAssign []))
+                                                                              else error "Variable name is in use."
   
-  evaluateStatement (StatementIfElse (ExprBool expr) s1 s2) env | expr == True = tail (evaluateStatementList s1 ([]:env))
-                                                                | otherwise = tail (evaluateStatementList s2 ([]:env))
-  evaluateStatement (StatementIfElse (ExprInt e) _ _) _ = error ("Couldn't match the given expression with the bool type!");
-  evaluateStatement (StatementIfElse (ExprString e) _ _) _  = error ("Couldn't match the given expression with the bool type!");                                                         
+  evaluateStatement (StatementArrayDeclr (ArrayDeclrAssign t i e)) input env = do if isValueFree i env
+                                                                                  then return (addBinding env i (evaluateExpr e env))
+                                                                                  else error "Variable name is in use."
 
-  evaluateStatement (StatementIfElse e s1 s2) env = evaluateStatement (StatementIfElse (evaluateExpr e env) s1 s2) env
+  evaluateStatement (StatementArrayAssign i index e) input env = return (updateListValueBinding i (evaluateExpr e env) (evaluateExpr index env) env)
 
-  -- evaluateStatement (StatementWhile (ExprBool expr) s) env | expr == True = evaluateStatement (StatementWhile (ExprBool expr) s) (tail (evaluateStatementList s ([]:env)))
-  --                                                          | otherwise = env 
+  evaluateStatement (StatementAssign i e) input env = return (updateValueBinding i (evaluateExpr e env) env)
+  
+  evaluateStatement (StatementIfElse (ExprBool expr) s1 s2) input env = do if expr 
+                                                                           then do s1Eval <- evaluateStatementList s1 input ([]:env)
+                                                                                   return (tail s1Eval)
+                                                                           else do s2Eval <- evaluateStatementList s2 input ([]:env)
+                                                                                   return (tail s2Eval)
+  evaluateStatement (StatementIfElse (ExprInt e) _ _) _ _ = error ("Couldn't match the given expression with the bool type!");
+  evaluateStatement (StatementIfElse (ExprString e) _ _) _ _  = error ("Couldn't match the given expression with the bool type!");                                                         
 
+  evaluateStatement (StatementIfElse e s1 s2) input env = evaluateStatement (StatementIfElse (evaluateExpr e env) s1 s2) input env
 
-  evaluateStatement (StatementWhile e s) env | checkIfBoolAndTrue (evaluateExpr e env) = evaluateStatement (StatementWhile e s) (tail (evaluateStatementList s ([]:env)))
-                                             | otherwise = env  
+  evaluateStatement (StatementWhile e s) input env = do if checkIfBoolAndTrue (evaluateExpr e env)
+                                                        then do sEval <- evaluateStatementList s input ([]:env)
+                                                                nextEval <- evaluateStatement (StatementWhile e s) input (tail sEval)
+                                                                return (nextEval) 
+                                                        else return (env)  
+
+  evaluateStatement (StatementPrint e) input env = evaluateStatementPrint (StatementPrint e) input env
