@@ -1,0 +1,11 @@
+int[] z = readline();
+
+int x=0;
+while(x<length(z))
+{
+    print(z[x]);
+    print(" ");
+    print(z[x]);
+    print("\n");
+    x=x+1;
+}

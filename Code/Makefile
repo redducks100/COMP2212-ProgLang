@@ -9,11 +9,11 @@
 # Files that need to be generated from other files
 DEPEND += Tokens.hs Grammar.hs Eval.hs
 
-all: $(DEPEND) Main
+all: $(DEPEND) myinterpreter
 
 # Build an executable for Toy interpreter
-Main: $(DEPEND) Main.hs
-	ghc Main.hs
+myinterpreter: $(DEPEND) myinterpreter.hs
+	ghc myinterpreter.hs
 
 # Generate ML files from a parser definition file
 Grammar.hs : Grammar.y

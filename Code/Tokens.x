@@ -8,7 +8,7 @@ module Tokens where
 $digit = 0-9     
 -- alphabetic characters
 $alpha = [a-zA-Z]
-$graphic = $printable # $white
+$graphic = $printable
 @string =  \" ($graphic # \")* \"
 
 
@@ -43,6 +43,8 @@ tokens :-
   "while"     {tok(\p s -> TokenWhile p)}
   "print"     {tok(\p s -> TokenPrint p)}
   "read"      {tok(\p s -> TokenRead p)}
+  "readline"  {tok(\p s -> TokenReadLine p)}
+  "length"    {tok(\p s -> TokenLength p)}
   $alpha [$alpha $digit \_ \’]*   { tok(\p s -> TokenIdent p s) }
   @string     {tok(\p s -> TokenStringLit p (init (tail s))) } 
   $digit+     {tok(\p s -> TokenIntLit p (read s)) } 
@@ -78,7 +80,9 @@ data Token =
   TokenFalse      AlexPosn  |
   TokenWhile      AlexPosn  |
   TokenPrint      AlexPosn  |
-  TokenRead       AlexPosn  
+  TokenRead       AlexPosn  |
+  TokenReadLine   AlexPosn  |
+  TokenLength     AlexPosn  
   deriving (Eq,Show) 
 
 
@@ -107,5 +111,7 @@ token_posn (TokenFalse (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenWhile (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenPrint (AlexPn a l c))=show(l) ++ ":" ++ show(c)
 token_posn (TokenRead (AlexPn a l c))=show(l) ++ ":" ++ show(c)
+token_posn (TokenReadLine (AlexPn a l c))=show(l) ++ ":" ++ show(c)
+token_posn (TokenLength (AlexPn a l c))=show(l) ++ ":" ++ show(c)
   
 }

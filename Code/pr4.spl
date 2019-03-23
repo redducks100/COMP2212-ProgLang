@@ -1,0 +1,15 @@
+int[] a = readline();
+int i = 0;
+while(i<length(a))
+{
+    int j = 0;
+    int sum=0;
+    while(j<=i)
+    {
+        sum=sum+a[j];
+        j=j+1;
+    }
+    print(sum);
+    print("\n");
+    i=i+1;
+}

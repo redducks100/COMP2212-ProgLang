@@ -1,0 +1,15 @@
+int[] z = readline();
+int i=0;
+int n=length(z);
+print(0);
+print("\n");
+while(i<n-1)
+{
+print(z[i]);
+if(i<n-2)
+{
+print("\n");
+}
+else {}
+i=i+1;
+}
