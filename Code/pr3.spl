@@ -2,9 +2,9 @@ int[] a = readline();
 int[] b = readline();
 
 int i = 0;
-while(i < length(a))
+while(i < length(a) and i < length(b))    
 {
-    print(3*b[i] + a[i]);
+    print(3*b[i]+a[i]);
     print("\n");
     i=i+1;
 }

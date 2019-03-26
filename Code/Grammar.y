@@ -49,9 +49,9 @@ import Tokens
 %nonassoc "if" "while"
 %nonassoc "else"
 %nonassoc "print" "int" "bool" "string"
-%nonassoc ">" "<" ">=" "<=" "=="
 %right "="
 %left "and" "or"
+%right ">" "<" ">=" "<=" "=="
 %left "+" "-" 
 %left "*" "/"
 %left "^"  
@@ -65,6 +65,7 @@ Program :
         StatementList { Program $1 }
 
 Statement : "if" "(" Expr ")" "{" StatementList "}" "else" "{" StatementList "}"  { StatementIfElse $3 $6 $10 }
+          | "if" "(" Expr ")" "{" StatementList "}" {StatementIf $3 $6}
           | "while" "(" Expr ")" "{" StatementList "}"                { StatementWhile $3 $6 }
           | "print" "(" Expr ")" ";"                      { StatementPrint $3 }
           | ident "=" Expr ";"                            { StatementAssign $1 $3 }
@@ -99,7 +100,7 @@ Expr : "not" Expr             { ExprNot $2 }
      | Expr "and" Expr        { ExprCompareOp $1 And $3 } 
      | Expr "or" Expr         { ExprCompareOp $1 Or $3 }
      | "(" Expr ")"           { ExprExpr $2} 
-     | "{" ExprList "}"       { ExprArrayAssign $2 } 
+     | "[" ExprList "]"       { ExprArrayAssign $2 } 
      | ident "[" Expr "]"   { ExprArrayValue $1 $3} 
      | intLit                 { ExprInt $1 } 
      | ident                  { ExprIdent $1 } 
@@ -136,6 +137,7 @@ data ArrayDeclr
 data Statement
     = Statement String
     | StatementIfElse Expr StatementList StatementList
+    | StatementIf Expr StatementList
     | StatementWhile Expr StatementList
     | StatementPrint Expr
     | StatementAssign Ident Expr
@@ -172,6 +174,10 @@ data Type
     =   TypeInt
     |   TypeBool
     |   TypeString 
+    |   TypeIntArray
+    |   TypeBoolArray
+    |   TypeStringArray
+    |   TypeEmpty
     deriving (Show,Eq) 
 
 data Op

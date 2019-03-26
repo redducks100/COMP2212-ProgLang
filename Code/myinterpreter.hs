@@ -37,6 +37,7 @@ main' = do (fileName: _) <- getArgs
            let inputTextLines = combineMultipleLists (splitWhitespaceAndConvert (lines inputTextWhole)) []
            let tokens = alexScanTokens sourceText
            let parsedProg = parseCalc (alexScanTokens sourceText)
+           --putStrLn(show(parsedProg))
            compiledProg <- evaluateProgram (parsedProg) inputTextLines
            return ()
         

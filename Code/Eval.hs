@@ -31,8 +31,21 @@ module Eval where
   -- | StatementError
   -- deriving (Show, Eq)
 
-  type Environment = [(String, Expr)]
-  
+  type Environment = [(String, Type, Expr)]
+
+  typeOfList :: [Expr] -> Maybe Type -> Type
+  typeOfList [] (Just t) = t 
+  typeOfList (x:xs) Nothing = typeOfList xs (Just (typeOf x))
+  typeOfList (x:xs) (Just t) | t == typeOf x = typeOfList xs (Just t)
+                             | otherwise = error "You cannot have multiple type in an array!"
+
+  typeOf :: Expr -> Type
+  typeOf (ExprInt _) = TypeInt
+  typeOf (ExprBool _) = TypeBool
+  typeOf (ExprString _) = TypeString
+  typeOf (ExprArrayAssign xs) = typeOfList xs Nothing
+  typeOf _ = error "Cannot get type"
+
   prettyPrint :: Expr -> String
   prettyPrint (ExprInt x) = show x
   prettyPrint (ExprBool x) = show x
@@ -45,7 +58,7 @@ module Eval where
   
 
   getLineInput :: [[Int]] -> [Int]
-  getLineInput [] = error "End of file reached."
+  getLineInput [] = []
   getLineInput xs = head xs
   
   getInputAfterReadLine :: [[Int]] -> [[Int]]
@@ -75,12 +88,12 @@ module Eval where
   
   getValueBindingInd :: String -> Environment -> Expr
   getValueBindingInd x [] = ExprNothing 
-  getValueBindingInd x ((y,e):env) | x == y && isEmpty e == False = e
-                                   | x == y && isEmpty e = error ("Variable '" ++ x ++ "' is not initialised with a value!")
-                                   | otherwise = getValueBindingInd x env
+  getValueBindingInd x ((y,t,e):env) | x == y && isEmpty e == False = e
+                                     | x == y && isEmpty e = error ("Variable '" ++ x ++ "' is not initialised with a value!")
+                                     | otherwise = getValueBindingInd x env
   
-  addBinding :: [Environment] -> String -> Expr -> [Environment]
-  addBinding env x e = ((x,e) : (head env)) : tail env
+  addBinding :: [Environment] -> String -> Type -> Expr -> [Environment]
+  addBinding env x t e = ((x,t,e) : (head env)) : tail env
   
   getListValueBinding :: String -> Expr -> [Environment] -> Expr
   getListValueBinding x index [] = error ("Get list value: Value binding '" ++ x ++ "' not found!")
@@ -90,9 +103,9 @@ module Eval where
 
   getListValueBindingInd :: String -> Expr -> Environment -> Expr
   getListValueBindingInd x e [] = ExprNothing
-  getListValueBindingInd x (ExprInt index) ((y,e):env) | x == y && isArray e = (getExprList e) !! index
-                                                       | x == y && (isArray e) == False = error ("Variable '" ++ x ++ "' is not a list")
-                                                       | otherwise = getListValueBindingInd x (ExprInt index) env
+  getListValueBindingInd x (ExprInt index) ((y,t,e):env) | x == y && isArray e = (getExprList e) !! index
+                                                         | x == y && (isArray e) == False = error ("Variable '" ++ x ++ "' is not a list")
+                                                         | otherwise = getListValueBindingInd x (ExprInt index) env
   getListValueBindingInd x _ _ = error ("Index is not type of integer!")  
                                                   
 
@@ -104,11 +117,12 @@ module Eval where
   
   updateValueBindingInd :: String -> Expr -> Environment -> (Environment, Bool)
   updateValueBindingInd x ne [] = ([], False)
-  updateValueBindingInd x ne ((y,e):env) | x == y && isArray ne && isArray e = ((x,ne) : env, True)
-                                         | x == y && (isArray ne) == False && (isArray e) == False = ((x,ne) : env, True)
-                                         | x /= y = ((y,e) : (fst nextOne), snd nextOne) 
-                                         | (isArray ne) == False && isArray e = error ("'" ++ x ++ "': You cannot assign a single expression to a list!")                             
-                                         | isArray ne && (isArray e) == False = error ("'" ++ x ++ "': You cannot assign an expression list to a variable!")
+  updateValueBindingInd x ne ((y,t,e):env) | x == y && isArray ne && isArray e && typeOf ne == t = ((x,t,ne) : env, True)
+                                           | x == y && (isArray ne) == False && (isArray e) == False && typeOf ne == t = ((x,t,ne) : env, True)
+                                           | x /= y = ((y,t,e) : (fst nextOne), snd nextOne) 
+                                           | (isArray ne) == False && isArray e = error ("'" ++ x ++ "': You cannot assign a single expression to a list!")                             
+                                           | isArray ne && (isArray e) == False = error ("'" ++ x ++ "': You cannot assign an expression list to a variable!")
+                                           | otherwise = error ("'" ++ x ++ "': You cannot assign a value of type '" ++ (show (typeOf ne)) ++ "' to a variable of type: '" ++ show t ++ "'")
                                          where nextOne = updateValueBindingInd x ne env
 
   updateListValueBinding :: String -> Expr -> Expr -> [Environment] -> [Environment]
@@ -119,10 +133,11 @@ module Eval where
 
   updateListValueBindingInd :: String -> Expr -> Expr -> Environment -> (Environment, Bool)
   updateListValueBindingInd x ne index [] = ([], False)
-  updateListValueBindingInd x ne (ExprInt index) ((y,e): env) | x == y && (isArray ne) == False && isArray e = ((x, ExprArrayAssign (replaceNth index ne (getExprList e))) : env, True)
+  updateListValueBindingInd x ne (ExprInt index) ((y,t,e): env) | x == y && (isArray ne) == False && isArray e && typeOf ne == t = ((x,t,ExprArrayAssign (replaceNth index ne (getExprList e))) : env, True)
                                                               | x == y && (isArray ne) == False && (isArray e) == False = error ("'" ++ x ++ "': Variable is not a list!") 
                                                               | x == y && isArray ne && isArray e = error ("'" ++ x ++ "': You cannot assign a list to a variable!") 
-                                                              | x /= y = ((y,e) : (fst nextOne), (snd nextOne))
+                                                              | x /= y = ((y,t,e) : (fst nextOne), (snd nextOne))
+                                                              | otherwise = error ("'" ++ x ++ "': You cannot assign a value of type '" ++ (show (typeOf ne)) ++ "' to a member of a list of type: '" ++ show t ++ "'")
                                                               where nextOne = updateListValueBindingInd x ne (ExprInt index) env
   updateListValueBindingInd x ne _ _ = error ("Index is not type of integer!")  
 
@@ -144,7 +159,6 @@ module Eval where
   getArrayLength _ = -1
 
   isEmpty :: Expr -> Bool
-  isEmpty (ExprArrayAssign []) = True
   isEmpty ExprEmpty = True
   isEmpty _ = False
 
@@ -156,7 +170,7 @@ module Eval where
 
   isValueFreeInd :: String -> Environment -> Bool
   isValueFreeInd x [] = True
-  isValueFreeInd x ((y,e):env) | x == y = False
+  isValueFreeInd x ((y,t,e):env) | x == y = False
                                | otherwise = isValueFreeInd x env
 
   isValue :: Expr -> Bool
@@ -271,22 +285,27 @@ module Eval where
 
   evaluateStatement :: Statement -> [[Int]] -> [Environment] -> IO(([Environment], [[Int]]))
   evaluateStatement (StatementVarDeclr (VarDeclrOnly t i)) input env = do if isValueFree i env 
-                                                                          then return (addBinding env i ExprEmpty, input)
+                                                                          then return (addBinding env i t ExprEmpty, input)
                                                                           else error "Variable name is in use."
 
   evaluateStatement (StatementVarDeclr (VarDeclrAssign t i e)) input env = do if isValueFree i env
                                                                               then do let evaluatedExpr = evaluateExpr e input env
-                                                                                      let binding = addBinding env i (fst evaluatedExpr)
-                                                                                      return (binding, snd evaluatedExpr)
+                                                                                      if typeOf (fst evaluatedExpr) == t
+                                                                                      then do let binding = addBinding env i t (fst evaluatedExpr)
+                                                                                              return (binding, snd evaluatedExpr)
+                                                                                      else error ("'" ++ i ++ "': You cannot assign a value of type '" ++ (show (typeOf e)) ++ "' to a variable of type: '" ++ show t ++ "'")
                                                                               else error "Variable name is in use."
   
   evaluateStatement (StatementArrayDeclr (ArrayDeclrOnly t i)) input env = do if isValueFree i env
-                                                                              then return (addBinding env i (ExprArrayAssign []), input)
+                                                                              then return (addBinding env i t (ExprArrayAssign []), input)
                                                                               else error "Variable name is in use."
   
   evaluateStatement (StatementArrayDeclr (ArrayDeclrAssign t i e)) input env = do if isValueFree i env
                                                                                   then do let evaluatedExpr = evaluateExpr e input env
-                                                                                          return (addBinding env i (fst evaluatedExpr), snd evaluatedExpr)
+                                                                                          if typeOf (fst evaluatedExpr) == t
+                                                                                          then do let evaluatedEnv = addBinding env i t (fst evaluatedExpr)
+                                                                                                  return (evaluatedEnv, snd evaluatedExpr)
+                                                                                          else error ("'" ++ i ++ "': You cannot assign a value of type '" ++ (show (typeOf e)) ++ "' to a list of type: '" ++ show t ++ "'")
                                                                                   else error "Variable name is in use."
 
   evaluateStatement (StatementArrayAssign i index e) input env = do let evaluatedExpr = evaluateExpr e input env
@@ -296,6 +315,17 @@ module Eval where
   evaluateStatement (StatementAssign i e) input env = do let evaluatedExpr = evaluateExpr e input env
                                                          return (updateValueBinding i (fst (evaluatedExpr)) env, snd (evaluatedExpr))
   
+  evaluateStatement (StatementIf (ExprBool expr) s) input env = do if expr
+                                                                    then do sEval <- evaluateStatementList s input ([]:env)
+                                                                            return (tail (fst sEval), snd sEval)
+                                                                    else return (env, input)
+
+  evaluateStatement (StatementIf (ExprInt e) _ ) _ _ = error ("Couldn't match the given expression with the bool type!");
+  evaluateStatement (StatementIf (ExprString e) _ ) _ _  = error ("Couldn't match the given expression with the bool type!");
+
+  evaluateStatement (StatementIf e s) input env = let evaluatedExpr = evaluateExpr e input env in
+                                                  evaluateStatement (StatementIf (fst evaluatedExpr) s) (snd evaluatedExpr) env
+
   evaluateStatement (StatementIfElse (ExprBool expr) s1 s2) input env = do if expr 
                                                                            then do s1Eval <- evaluateStatementList s1 input ([]:env)
                                                                                    return (tail (fst s1Eval), snd s1Eval)
@@ -311,6 +341,6 @@ module Eval where
                                                         if checkIfBoolAndTrue (fst evaluatedExpr)
                                                         then do sEval <- evaluateStatementList s (snd evaluatedExpr) ([]:env)
                                                                 evaluateStatement (StatementWhile e s) (snd sEval) (tail (fst sEval)) 
-                                                        else return (env, snd evaluatedExpr)  
+                                                        else return (env, snd evaluatedExpr)
 
   evaluateStatement (StatementPrint e) input env = evaluateStatementPrint (StatementPrint e) input env

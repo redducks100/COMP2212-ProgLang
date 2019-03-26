@@ -1,4 +1,7 @@
 *.hs
+*.exe
+*.hi
+*.o
 
-!Main.hs
+!myinterpreter.hs
 !Eval.hs
