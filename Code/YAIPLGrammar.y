@@ -1,10 +1,10 @@
 { 
-module Grammar where 
-import Tokens 
+module YAIPLGrammar where 
+import YAIPLTokens 
 }
 
 %name parseCalc 
-%tokentype { Token } 
+%tokentype { YAIPLToken } 
 %error { parseError }
 
 %token 
@@ -116,7 +116,7 @@ Type : "bool"          { TypeBool }
      | "string"        { TypeString }
 
 { 
-parseError :: [Token] -> a
+parseError :: [YAIPLToken] -> a
 parseError [] = error " Unknown parse error"
 parseError (x:xs) = error ("Parse error at line:column " ++ (token_posn x))
 

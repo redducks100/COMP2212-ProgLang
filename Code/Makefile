@@ -1,13 +1,5 @@
-# 
-# Rules for compiling and linking the typechecker/evaluator
-#
-# Type
-#   make         to rebuild the executable files
-#   make clean   to remove all intermediate and temporary files
-#   
-
 # Files that need to be generated from other files
-DEPEND += Tokens.hs Grammar.hs Eval.hs
+DEPEND += YAIPLTokens.hs YAIPLGrammar.hs YAIPLEval.hs
 
 all: $(DEPEND) myinterpreter
 
@@ -16,19 +8,19 @@ myinterpreter: $(DEPEND) myinterpreter.hs
 	ghc myinterpreter.hs
 
 # Generate ML files from a parser definition file
-Grammar.hs : Grammar.y
-	@rm -f Grammar.hs
-	happy Grammar.y
-	@chmod -w Grammar.hs
+YAIPLGrammar.hs : YAIPLGrammar.y
+	@rm -f YAIPLGrammar.hs
+	happy YAIPLGrammar.y
+	@chmod -w YAIPLGrammar.hs
 
 # Generate ML files from a lexer definition file
-Tokens.hs : Tokens.x
-	@rm -f Tokens.hs
-	alex Tokens.x
-	@chmod -w Tokens.hs
+YAIPLTokens.hs : YAIPLTokens.x
+	@rm -f YAIPLTokens.hs
+	alex YAIPLTokens.x
+	@chmod -w YAIPLTokens.hs
 
 # Clean up the directory
 clean::
-	rm -rf Tokens.hs Grammar.hs *.hi *.o *.info *.exe
+	rm -rf YAIPLTokens.hs YAIPLGrammar.hs *.hi *.o *.info *.exe
 
 

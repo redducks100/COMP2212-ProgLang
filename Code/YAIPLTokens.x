@@ -1,5 +1,5 @@
 { 
-module Tokens where 
+module YAIPLTokens where 
 }
 
 %wrapper "posn" 
@@ -55,7 +55,7 @@ tok f p s = f p s
 
 -- Each action has type :: String -> Token 
 -- The token type: 
-data Token = 
+data YAIPLToken = 
   TokenOp         AlexPosn Char |
   TokenCompareOp  AlexPosn String |
   TokenIdent      AlexPosn String |

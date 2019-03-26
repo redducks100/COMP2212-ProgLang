@@ -1,10 +1,16 @@
-import Tokens
-import Grammar
+import YAIPLTokens
+import YAIPLGrammar
 import System.Environment
 import Control.Exception
 import System.IO
-import Eval
+import YAIPLEval
 
+-- Language Name: 
+-- Yet Another Imperative Programming Language (YAIPL)
+
+-- Group Members:
+-- Andronache Simone (29177502)
+-- Erich Octavian Zimmermann (29076544)
 
 explodeList :: [a] -> [[a]]
 explodeList [] = []
@@ -37,7 +43,6 @@ main' = do (fileName: _) <- getArgs
            let inputTextLines = combineMultipleLists (splitWhitespaceAndConvert (lines inputTextWhole)) []
            let tokens = alexScanTokens sourceText
            let parsedProg = parseCalc (alexScanTokens sourceText)
-           --putStrLn(show(parsedProg))
            compiledProg <- evaluateProgram (parsedProg) inputTextLines
            return ()
         

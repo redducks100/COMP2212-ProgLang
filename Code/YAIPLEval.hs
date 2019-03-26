@@ -1,39 +1,13 @@
-module Eval where
-  import Grammar
+module YAIPLEval where
+  import YAIPLGrammar
   import System.Environment
   import Control.Exception
   import System.IO
-  import Data.List
   
-  --data Expr 
-  --    = ExprString String 
-   ---- | ExprNot Expr 
-   --   | ExprOp Expr Op Expr 
-   --   | ExprCompareOp Expr CompareOp Expr 
-   --   | ExprInt Int 
-    --  | ExprBool Bool 
-    --  | ExprIdent Ident 
-   --   | ExprExpr Expr
-   --   | ExprArrayAssign ExprList 
-   --   | ExprArrayValue Ident Int
-   --   | ExprError
-    --  deriving (Show, Eq)
-  
-  -- data Statement
-  -- = Statement String
-  -- | StatementIfElse Expr StatementList StatementList---------
-  -- | StatementWhile Expr StatementList---------------------
-  -- | StatementPrint Expr-----------------------------------
-  -- | StatementAssign Ident Expr
-  -- | StatementArrayAssign Ident Int Expr
-  -- | StatementVarDeclr VarDeclr
-  -- | StatementArrayDeclr ArrayDeclr
-  -- | StatementError
-  -- deriving (Show, Eq)
-
   type Environment = [(String, Type, Expr)]
 
   typeOfList :: [Expr] -> Maybe Type -> Type
+  typeOfList [] Nothing = TypeEmpty
   typeOfList [] (Just t) = t 
   typeOfList (x:xs) Nothing = typeOfList xs (Just (typeOf x))
   typeOfList (x:xs) (Just t) | t == typeOf x = typeOfList xs (Just t)
@@ -302,7 +276,7 @@ module Eval where
   
   evaluateStatement (StatementArrayDeclr (ArrayDeclrAssign t i e)) input env = do if isValueFree i env
                                                                                   then do let evaluatedExpr = evaluateExpr e input env
-                                                                                          if typeOf (fst evaluatedExpr) == t
+                                                                                          if typeOf (fst evaluatedExpr) == TypeEmpty || typeOf (fst evaluatedExpr) == t
                                                                                           then do let evaluatedEnv = addBinding env i t (fst evaluatedExpr)
                                                                                                   return (evaluatedEnv, snd evaluatedExpr)
                                                                                           else error ("'" ++ i ++ "': You cannot assign a value of type '" ++ (show (typeOf e)) ++ "' to a list of type: '" ++ show t ++ "'")

@@ -4,4 +4,4 @@
 *.o
 
 !myinterpreter.hs
-!Eval.hs
+!YAIPLEval.hs
