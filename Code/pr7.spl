@@ -1,0 +1,13 @@
+int[] a = readline();
+int[] b = readline();
+
+int i=0;
+
+while(i < length(a) and i < length(b))
+{
+    print(a[i]-b[i]);
+    print(" ");
+    print(a[i]);
+    print("\n");
+    i=i+1;
+}

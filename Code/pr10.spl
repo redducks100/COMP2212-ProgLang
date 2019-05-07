@@ -1,0 +1,22 @@
+int[] a = readline();
+
+int i=0;
+
+int[] b = [];
+
+while(i<length(a))
+{
+    int output;
+    if(i < 2)
+    {
+        output = a[i];
+    }
+    else
+    {
+        output = a[i]+b[i-2];
+    }
+    b = b + [output];
+    print(output);
+    print("\n");
+    i=i+1;
+}

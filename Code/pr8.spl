@@ -1,0 +1,18 @@
+int[] a = readline();
+
+int i = 0;
+
+while(i < length(a))
+{
+    if(i<1)
+    {
+        print(a[i]);
+    }
+    else
+    {
+        print(a[i] + a[i-1]);
+    }
+
+    print("\n");
+    i=i+1;
+}
